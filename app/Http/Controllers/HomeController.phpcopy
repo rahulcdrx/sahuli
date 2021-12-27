@@ -1,0 +1,60 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Job;
+use App\State;
+use App\Category;
+use App\District;
+use App\Location;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
+class HomeController extends Controller
+{
+    public function index()
+    {
+        $searchLocations = Location::pluck('name', 'id');
+        $searchStates = State::pluck('name', 'id');
+        $searchDistricts = District::pluck('name','id');
+        $searchCategories = Category::pluck('name', 'id');
+        $searchByCategory = Category::withCount('jobs')
+            ->orderBy('jobs_count', 'desc')
+            ->take(5)
+            ->pluck('name', 'id');
+        $jobs = Job::with('company')
+            ->orderBy('id', 'desc')->latest(5);
+            //->take(7)
+            //->get();
+
+        return view('index', compact(['searchLocations', 'searchCategories', 'searchByCategory', 'jobs','searchStates', 'searchDistricts']));
+    }
+
+    public function search(Request $request)
+    {
+        $jobs = Job::with('company')
+            ->searchResults()
+            ->paginate(7);
+
+        $banner = 'Search results';
+
+        return view('jobs.index', compact(['jobs', 'banner']));
+    }
+
+
+    public function getstate($id=0)
+    {
+        $cities = DB::table("districts")
+                    ->where("state_id",$id)
+                    ->pluck("name","id");
+        return json_encode($cities);
+    }
+
+    public function getdistrict($id=0)
+    {
+        $cities1 = DB::table("locations")
+                    ->where("district_id",$id)
+                    ->pluck("name","id");
+        return json_encode($cities1);
+    }
+}
